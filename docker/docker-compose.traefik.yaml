@@ -4,6 +4,8 @@ services:
   api:
     image: soulteary/dify-api:claude3
     restart: always
+    networks:
+      - dify-net
     environment:
       # Startup mode, 'api' starts the API server.
       MODE: api
@@ -137,6 +139,8 @@ services:
   worker:
     image: soulteary/dify-api:claude3
     restart: always
+    networks:
+      - dify-net
     environment:
       # Startup mode, 'worker' starts the Celery worker for processing the queue.
       MODE: worker
@@ -208,6 +212,8 @@ services:
   web:
     image: langgenius/dify-web:0.5.9
     restart: always
+    networks:
+      - dify-net
     environment:
       EDITION: SELF_HOSTED
       # The base URL of console application api server, refers to the Console base URL of WEB service if console domain is
@@ -236,6 +242,8 @@ services:
       POSTGRES_DB: dify
       # postgres data directory
       PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      - dify-net
     volumes:
       - ./volumes/db/data:/var/lib/postgresql/data
     # uncomment to expose db(postgresql) port to host
@@ -251,6 +259,8 @@ services:
   redis:
     image: redis:6-alpine
     restart: always
+    networks:
+      - dify-net
     volumes:
       # Mount the redis data directory to the container.
       - ./volumes/redis/data:/data
@@ -266,6 +276,8 @@ services:
   weaviate:
     image: semitechnologies/weaviate:1.19.0
     restart: always
+    networks:
+      - dify-net
     volumes:
       # Mount the Weaviate data directory to the container.
       - ./volumes/weaviate:/var/lib/weaviate
@@ -311,5 +323,22 @@ services:
     depends_on:
       - api
       - web
-    ports:
-      - "80:80"
+    networks:
+      - traefik
+      - dify-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.dify-web.entrypoints=http"
+      - "traefik.http.routers.dify-web.rule=Host(`dify.black.com`)"
+      - "traefik.http.routers.dify-ssl.middlewares=gzip@file"
+      - "traefik.http.routers.dify-ssl.entrypoints=https"
+      - "traefik.http.routers.dify-ssl.tls=true"
+      - "traefik.http.routers.dify-ssl.rule=Host(`dify.black.com`)"
+      - "traefik.http.services.dify-backend.loadbalancer.server.scheme=http"
+      - "traefik.http.services.dify-backend.loadbalancer.server.port=80"
+
+networks:
+  dify-net:
+  traefik:
+    external: true
