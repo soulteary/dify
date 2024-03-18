@@ -3,6 +3,12 @@ FROM python:3.10-slim-bookworm AS base
 
 LABEL maintainer="takatost@gmail.com"
 
+RUN echo "Acquire::http::Pipeline-Depth \"0\";" > /etc/apt/apt.conf.d/99nopipelining && \
+    sed -i "s@http://deb.debian.org@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list.d/debian.sources && \
+    sed -i "s@http://security.debian.org@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list.d/debian.sources
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip3 install --upgrade pip  # enable PEP 660 support
+
 # install packages
 FROM base as packages
 
