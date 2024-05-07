@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from typing import Any, Union
 
 from pydantic import BaseModel
@@ -25,7 +26,7 @@ class ToolConfigurationManager(BaseModel):
         """
         deep copy credentials
         """
-        return {key: value for key, value in credentials.items()}
+        return deepcopy(credentials)
     
     def encrypt_tool_credentials(self, credentials: dict[str, str]) -> dict[str, str]:
         """
@@ -112,12 +113,13 @@ class ToolParameterConfigurationManager(BaseModel):
     tool_runtime: Tool
     provider_name: str
     provider_type: str
+    identity_id: str
 
     def _deep_copy(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """
         deep copy parameters
         """
-        return {key: value for key, value in parameters.items()}
+        return deepcopy(parameters)
     
     def _merge_parameters(self) -> list[ToolParameter]:
         """
@@ -175,6 +177,8 @@ class ToolParameterConfigurationManager(BaseModel):
         # override parameters
         current_parameters = self._merge_parameters()
 
+        parameters = self._deep_copy(parameters)
+
         for parameter in current_parameters:
             if parameter.form == ToolParameter.ToolParameterForm.FORM and parameter.type == ToolParameter.ToolParameterType.SECRET_INPUT:
                 if parameter.name in parameters:
@@ -193,7 +197,8 @@ class ToolParameterConfigurationManager(BaseModel):
             tenant_id=self.tenant_id, 
             provider=f'{self.provider_type}.{self.provider_name}',
             tool_name=self.tool_runtime.identity.name,
-            cache_type=ToolParameterCacheType.PARAMETER
+            cache_type=ToolParameterCacheType.PARAMETER,
+            identity_id=self.identity_id
         )
         cached_parameters = cache.get()
         if cached_parameters:
@@ -222,7 +227,8 @@ class ToolParameterConfigurationManager(BaseModel):
             tenant_id=self.tenant_id, 
             provider=f'{self.provider_type}.{self.provider_name}',
             tool_name=self.tool_runtime.identity.name,
-            cache_type=ToolParameterCacheType.PARAMETER
+            cache_type=ToolParameterCacheType.PARAMETER,
+            identity_id=self.identity_id
         )
         cache.delete()
 

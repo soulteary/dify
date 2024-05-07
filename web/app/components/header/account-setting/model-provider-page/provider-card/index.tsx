@@ -20,7 +20,6 @@ import ModelBadge from '../model-badge'
 import ProviderIcon from '../provider-icon'
 import s from './index.module.css'
 import { Plus, Settings01 } from '@/app/components/base/icons/src/vender/line/general'
-import { CoinsStacked01 } from '@/app/components/base/icons/src/vender/line/financeAndECommerce'
 import Button from '@/app/components/base/button'
 import { IS_CE_EDITION } from '@/config'
 
@@ -116,11 +115,11 @@ const ProviderCard: FC<ProviderCardProps> = ({
                 return (
                   <Button
                     key={method}
-                    className='h-7 bg-white text-xs text-gray-700'
+                    className={'h-7 bg-white text-xs text-gray-700 shrink-0'}
                     onClick={() => onOpenModal(method)}
                   >
-                    <Settings01 className='mr-[5px] w-3.5 h-3.5' />
-                    {t('common.operation.setup')}
+                    <Settings01 className={`mr-[5px] w-3.5 h-3.5 ${s.icon}`} />
+                    <span className='text-xs inline-flex items-center justify-center overflow-ellipsis shrink-0'>{t('common.operation.setup')}</span>
                   </Button>
                 )
               }
@@ -135,17 +134,6 @@ const ProviderCard: FC<ProviderCardProps> = ({
                 </Button>
               )
             })
-          }
-          {
-            provider.provider === 'anthropic' && !IS_CE_EDITION && (
-              <Button
-                className='h-7 text-xs text-gray-700'
-                onClick={handlePay}
-              >
-                <CoinsStacked01 className='mr-[5px] w-3.5 h-3.5' />
-                {t('common.modelProvider.buyQuota')}
-              </Button>
-            )
           }
         </div>
       </div>

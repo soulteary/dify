@@ -4,7 +4,7 @@
 
 这份指南，就像 Dify 本身一样，是一个不断改进的工作。如果有时它落后于实际项目，我们非常感谢你的理解，并欢迎任何反馈以供我们改进。
 
-在许可方面，请花一分钟阅读我们简短的[许可证和贡献者协议](./license)。社区还遵守[行为准则](https://github.com/langgenius/.github/blob/main/CODE_OF_CONDUCT.md)。
+在许可方面，请花一分钟阅读我们简短的[许可证和贡献者协议](./LICENSE)。社区还遵守[行为准则](https://github.com/langgenius/.github/blob/main/CODE_OF_CONDUCT.md)。
 
 ## 在开始之前
 
@@ -34,7 +34,7 @@
   | Feature Type                                                 | Priority        |
   | ------------------------------------------------------------ | --------------- |
   | High-Priority Features as being labeled by a team member     | High Priority   |
-  | Popular feature requests from our [community feedback board](https://feedback.dify.ai/) | Medium Priority |
+  | Popular feature requests from our [community feedback board](https://github.com/langgenius/dify/discussions/categories/feedbacks) | Medium Priority |
   | Non-core features and minor enhancements                     | Low Priority    |
   | Valuable but not immediate                                   | Future-Feature  |
 
@@ -152,4 +152,4 @@ Dify的后端使用Python编写，使用[Flask](https://flask.palletsprojects.co
 
 ## 获取帮助
 
-如果你在贡献过程中遇到困难或者有任何问题，可以通过相关的 GitHub 问题提出你的疑问，或者加入我们的 [Discord](https://discord.gg/AhzKf7dNgk) 进行快速交流。
+如果你在贡献过程中遇到困难或者有任何问题，可以通过相关的 GitHub 问题提出你的疑问，或者加入我们的 [Discord](https://discord.gg/8Tpq4AcN9c) 进行快速交流。
