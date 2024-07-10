@@ -26,13 +26,17 @@ class AppSiteApi(WebApiResource):
 
     site_fields = {
         'title': fields.String,
+        'chat_color_theme': fields.String,
+        'chat_color_theme_inverted': fields.Boolean,
         'icon': fields.String,
         'icon_background': fields.String,
         'description': fields.String,
         'copyright': fields.String,
         'privacy_policy': fields.String,
+        'custom_disclaimer': fields.String,
         'default_language': fields.String,
-        'prompt_public': fields.Boolean
+        'prompt_public': fields.Boolean,
+        'show_workflow_steps': fields.Boolean,
     }
 
     app_fields = {

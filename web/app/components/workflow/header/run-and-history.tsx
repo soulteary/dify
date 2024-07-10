@@ -1,89 +1,30 @@
 import type { FC } from 'react'
-import { memo, useCallback } from 'react'
+import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useStoreApi } from 'reactflow'
-import cn from 'classnames'
 import {
-  useStore,
-  useWorkflowStore,
-} from '../store'
+  RiLoader2Line,
+  RiPlayLargeFill,
+} from '@remixicon/react'
+import { useStore } from '../store'
 import {
   useIsChatMode,
-  useNodesSyncDraft,
-  useWorkflowInteractions,
   useWorkflowRun,
+  useWorkflowStartRun,
 } from '../hooks'
-import {
-  BlockEnum,
-  WorkflowRunningStatus,
-} from '../types'
+import { WorkflowRunningStatus } from '../types'
 import ViewHistory from './view-history'
+import cn from '@/utils/classnames'
 import {
-  Play,
   StopCircle,
 } from '@/app/components/base/icons/src/vender/line/mediaAndDevices'
-import { Loading02 } from '@/app/components/base/icons/src/vender/line/general'
-import { useFeaturesStore } from '@/app/components/base/features/hooks'
 import { MessagePlay } from '@/app/components/base/icons/src/vender/line/communication'
 
 const RunMode = memo(() => {
   const { t } = useTranslation()
-  const store = useStoreApi()
-  const workflowStore = useWorkflowStore()
-  const featuresStore = useFeaturesStore()
-  const {
-    handleStopRun,
-    handleRun,
-  } = useWorkflowRun()
-  const {
-    doSyncWorkflowDraft,
-  } = useNodesSyncDraft()
-  const { handleCancelDebugAndPreviewPanel } = useWorkflowInteractions()
+  const { handleWorkflowStartRunInWorkflow } = useWorkflowStartRun()
+  const { handleStopRun } = useWorkflowRun()
   const workflowRunningData = useStore(s => s.workflowRunningData)
   const isRunning = workflowRunningData?.result.status === WorkflowRunningStatus.Running
-
-  const handleClick = useCallback(async () => {
-    const {
-      workflowRunningData,
-    } = workflowStore.getState()
-
-    if (workflowRunningData?.result.status === WorkflowRunningStatus.Running)
-      return
-
-    const { getNodes } = store.getState()
-    const nodes = getNodes()
-    const startNode = nodes.find(node => node.data.type === BlockEnum.Start)
-    const startVariables = startNode?.data.variables || []
-    const fileSettings = featuresStore!.getState().features.file
-    const {
-      showDebugAndPreviewPanel,
-      setShowDebugAndPreviewPanel,
-      setShowInputsPanel,
-    } = workflowStore.getState()
-
-    if (showDebugAndPreviewPanel) {
-      handleCancelDebugAndPreviewPanel()
-      return
-    }
-
-    if (!startVariables.length && !fileSettings?.image?.enabled) {
-      await doSyncWorkflowDraft()
-      handleRun({ inputs: {}, files: [] })
-      setShowDebugAndPreviewPanel(true)
-      setShowInputsPanel(false)
-    }
-    else {
-      setShowDebugAndPreviewPanel(true)
-      setShowInputsPanel(true)
-    }
-  }, [
-    workflowStore,
-    handleRun,
-    doSyncWorkflowDraft,
-    store,
-    featuresStore,
-    handleCancelDebugAndPreviewPanel,
-  ])
 
   return (
     <>
@@ -93,19 +34,19 @@ const RunMode = memo(() => {
           'hover:bg-primary-50 cursor-pointer',
           isRunning && 'bg-primary-50 !cursor-not-allowed',
         )}
-        onClick={handleClick}
+        onClick={() => handleWorkflowStartRunInWorkflow()}
       >
         {
           isRunning
             ? (
               <>
-                <Loading02 className='mr-1 w-4 h-4 animate-spin' />
+                <RiLoader2Line className='mr-1 w-4 h-4 animate-spin' />
                 {t('workflow.common.running')}
               </>
             )
             : (
               <>
-                <Play className='mr-1 w-4 h-4' />
+                <RiPlayLargeFill className='mr-1 w-4 h-4' />
                 {t('workflow.common.run')}
               </>
             )
@@ -128,23 +69,7 @@ RunMode.displayName = 'RunMode'
 
 const PreviewMode = memo(() => {
   const { t } = useTranslation()
-  const workflowStore = useWorkflowStore()
-  const { handleCancelDebugAndPreviewPanel } = useWorkflowInteractions()
-
-  const handleClick = () => {
-    const {
-      showDebugAndPreviewPanel,
-      setShowDebugAndPreviewPanel,
-      setHistoryWorkflowData,
-    } = workflowStore.getState()
-
-    if (showDebugAndPreviewPanel)
-      handleCancelDebugAndPreviewPanel()
-    else
-      setShowDebugAndPreviewPanel(true)
-
-    setHistoryWorkflowData(undefined)
-  }
+  const { handleWorkflowStartRunInChatflow } = useWorkflowStartRun()
 
   return (
     <div
@@ -152,7 +77,7 @@ const PreviewMode = memo(() => {
         'flex items-center px-1.5 h-7 rounded-md text-[13px] font-medium text-primary-600',
         'hover:bg-primary-50 cursor-pointer',
       )}
-      onClick={() => handleClick()}
+      onClick={() => handleWorkflowStartRunInChatflow()}
     >
       <MessagePlay className='mr-1 w-4 h-4' />
       {t('workflow.common.debugAndPreview')}

@@ -1,12 +1,15 @@
 import type { FC } from 'react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { RiQuestionLine } from '@remixicon/react'
 import MemoryConfig from '../_base/components/memory-config'
 import VarReferencePicker from '../_base/components/variable/var-reference-picker'
 import useConfig from './use-config'
 import ResolutionPicker from './components/resolution-picker'
 import type { LLMNodeType } from './types'
 import ConfigPrompt from './components/config-prompt'
+import VarList from '@/app/components/workflow/nodes/_base/components/variable/var-list'
+import AddButton2 from '@/app/components/base/button/add-button'
 import Field from '@/app/components/workflow/nodes/_base/components/field'
 import Split from '@/app/components/workflow/nodes/_base/components/split'
 import ModelParameterModal from '@/app/components/header/account-setting/model-provider-page/model-parameter-modal'
@@ -17,7 +20,6 @@ import BeforeRunForm from '@/app/components/workflow/nodes/_base/components/befo
 import type { Props as FormProps } from '@/app/components/workflow/nodes/_base/components/before-run-form/form'
 import ResultPanel from '@/app/components/workflow/run/result-panel'
 import TooltipPlus from '@/app/components/base/tooltip-plus'
-import { HelpCircle } from '@/app/components/base/icons/src/vender/line/general'
 import Editor from '@/app/components/workflow/nodes/_base/components/prompt/editor'
 import Switch from '@/app/components/base/switch'
 const i18nPrefix = 'workflow.nodes.llm'
@@ -43,8 +45,13 @@ const Panel: FC<NodePanelProps<LLMNodeType>> = ({
     filterInputVar,
     filterVar,
     availableVars,
-    availableNodes,
+    availableNodesWithParent,
+    isShowVars,
     handlePromptChange,
+    handleAddEmptyVariable,
+    handleAddVariable,
+    handleVarListChange,
+    handleVarNameChange,
     handleSyeQueryChange,
     handleMemoryChange,
     handleVisionResolutionEnabledChange,
@@ -169,7 +176,27 @@ const Panel: FC<NodePanelProps<LLMNodeType>> = ({
             payload={inputs.prompt_template}
             onChange={handlePromptChange}
             hasSetBlockStatus={hasSetBlockStatus}
+            varList={inputs.prompt_config?.jinja2_variables || []}
+            handleAddVariable={handleAddVariable}
           />
+        )}
+
+        {isShowVars && (
+          <Field
+            title={t('workflow.nodes.templateTransform.inputVars')}
+            operations={
+              !readOnly ? <AddButton2 onClick={handleAddEmptyVariable} /> : undefined
+            }
+          >
+            <VarList
+              nodeId={id}
+              readonly={readOnly}
+              list={inputs.prompt_config?.jinja2_variables || []}
+              onChange={handleVarListChange}
+              onVarNameChange={handleVarNameChange}
+              filterVar={filterVar}
+            />
+          </Field>
         )}
 
         {/* Memory put place examples. */}
@@ -181,7 +208,7 @@ const Panel: FC<NodePanelProps<LLMNodeType>> = ({
                 <TooltipPlus
                   popupContent={t('workflow.nodes.common.memories.tip')}
                 >
-                  <HelpCircle className='w-3.5 h-3.5 text-gray-400' />
+                  <RiQuestionLine className='w-3.5 h-3.5 text-gray-400' />
                 </TooltipPlus>
               </div>
               <div className='flex items-center h-[18px] px-1 rounded-[5px] border border-black/8 text-xs font-semibold text-gray-500 uppercase'>{t('workflow.nodes.common.memories.builtIn')}</div>
@@ -196,7 +223,7 @@ const Panel: FC<NodePanelProps<LLMNodeType>> = ({
                       <div className='max-w-[180px]'>{t('workflow.nodes.llm.roleDescription.user')}</div>
                     }
                   >
-                    <HelpCircle className='w-3.5 h-3.5 text-gray-400' />
+                    <RiQuestionLine className='w-3.5 h-3.5 text-gray-400' />
                   </TooltipPlus>
                 </div>}
                 value={inputs.memory.query_prompt_template || '{{#sys.query#}}'}
@@ -207,7 +234,7 @@ const Panel: FC<NodePanelProps<LLMNodeType>> = ({
                 isChatModel
                 hasSetBlockStatus={hasSetBlockStatus}
                 nodesOutputVars={availableVars}
-                availableNodes={availableNodes}
+                availableNodes={availableNodesWithParent}
               />
 
               {inputs.memory.query_prompt_template && !inputs.memory.query_prompt_template.includes('{{#sys.query#}}') && (

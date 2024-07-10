@@ -1,7 +1,6 @@
 import type { FC } from 'react'
 import { memo } from 'react'
 import { useNodes } from 'reactflow'
-import cn from 'classnames'
 import { useShallow } from 'zustand/react/shallow'
 import type { CommonNodeType } from '../types'
 import { Panel as NodePanel } from '../nodes'
@@ -14,6 +13,7 @@ import DebugAndPreview from './debug-and-preview'
 import Record from './record'
 import WorkflowPreview from './workflow-preview'
 import ChatRecord from './chat-record'
+import cn from '@/utils/classnames'
 import { useStore as useAppStore } from '@/app/components/app/store'
 import MessageLogModal from '@/app/components/base/message-log-modal'
 
@@ -28,11 +28,12 @@ const Panel: FC = () => {
     enableShortcuts,
     disableShortcuts,
   } = useWorkflow()
-  const { currentLogItem, setCurrentLogItem, showMessageLogModal, setShowMessageLogModal } = useAppStore(useShallow(state => ({
+  const { currentLogItem, setCurrentLogItem, showMessageLogModal, setShowMessageLogModal, currentLogModalActiveTab } = useAppStore(useShallow(state => ({
     currentLogItem: state.currentLogItem,
     setCurrentLogItem: state.setCurrentLogItem,
     showMessageLogModal: state.showMessageLogModal,
     setShowMessageLogModal: state.setShowMessageLogModal,
+    currentLogModalActiveTab: state.currentLogModalActiveTab,
   })))
 
   return (
@@ -55,6 +56,7 @@ const Panel: FC = () => {
               setCurrentLogItem()
               setShowMessageLogModal(false)
             }}
+            defaultTab={currentLogModalActiveTab}
           />
         )
       }

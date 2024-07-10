@@ -3,6 +3,8 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
+import yaml
+
 from core.app.apps.advanced_chat.app_config_manager import AdvancedChatAppConfigManager
 from core.app.apps.workflow.app_config_manager import WorkflowAppConfigManager
 from core.model_runtime.utils.encoders import jsonable_encoder
@@ -21,6 +23,7 @@ from models.workflow import (
     WorkflowNodeExecutionTriggeredFrom,
     WorkflowType,
 )
+from services.errors.app import WorkflowHashNotEqualError
 from services.workflow.workflow_converter import WorkflowConverter
 
 
@@ -63,12 +66,19 @@ class WorkflowService:
     def sync_draft_workflow(self, app_model: App,
                             graph: dict,
                             features: dict,
+                            unique_hash: Optional[str],
                             account: Account) -> Workflow:
         """
         Sync draft workflow
+        :raises WorkflowHashNotEqualError
         """
         # fetch draft workflow by app_model
         workflow = self.get_draft_workflow(app_model=app_model)
+
+        if workflow:
+            # validate unique hash
+            if workflow.unique_hash != unique_hash:
+                raise WorkflowHashNotEqualError()
 
         # validate features structure
         self.validate_features_structure(
@@ -103,6 +113,56 @@ class WorkflowService:
 
         # return draft workflow
         return workflow
+
+    def import_draft_workflow(self, app_model: App,
+                              data: str,
+                              account: Account) -> Workflow:
+        """
+        Import draft workflow
+        :param app_model: App instance
+        :param data: import data
+        :param account: Account instance
+        :return:
+        """
+        try:
+            import_data = yaml.safe_load(data)
+        except yaml.YAMLError as e:
+            raise ValueError("Invalid YAML format in data argument.")
+
+        app_data = import_data.get('app')
+        workflow = import_data.get('workflow')
+
+        if not app_data:
+            raise ValueError("Missing app in data argument")
+
+        app_mode = AppMode.value_of(app_data.get('mode'))
+        if app_mode not in [AppMode.ADVANCED_CHAT, AppMode.WORKFLOW]:
+            raise ValueError("Only support import workflow in advanced-chat or workflow app.")
+
+        if app_data.get('mode') != app_model.mode:
+            raise ValueError(f"App mode {app_data.get('mode')} is not matched with current app mode {app_model.mode}")
+
+        if not workflow:
+            raise ValueError("Missing workflow in data argument "
+                             "when app mode is advanced-chat or workflow")
+
+        # fetch draft workflow by app_model
+        current_draft_workflow = self.get_draft_workflow(app_model=app_model)
+        if current_draft_workflow:
+            unique_hash = current_draft_workflow.unique_hash
+        else:
+            unique_hash = None
+
+        # sync draft workflow
+        draft_workflow = self.sync_draft_workflow(
+            app_model=app_model,
+            graph=workflow.get('graph'),
+            features=workflow.get('features'),
+            unique_hash=unique_hash,
+            account=account
+        )
+
+        return draft_workflow
 
     def publish_workflow(self, app_model: App,
                          account: Account,

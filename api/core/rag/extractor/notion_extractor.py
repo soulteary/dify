@@ -9,7 +9,7 @@ from core.rag.extractor.extractor_base import BaseExtractor
 from core.rag.models.document import Document
 from extensions.ext_database import db
 from models.dataset import Document as DocumentModel
-from models.source import DataSourceBinding
+from models.source import DataSourceOauthBinding
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,12 @@ SEARCH_URL = "https://api.notion.com/v1/search"
 
 RETRIEVE_PAGE_URL_TMPL = "https://api.notion.com/v1/pages/{page_id}"
 RETRIEVE_DATABASE_URL_TMPL = "https://api.notion.com/v1/databases/{database_id}"
-HEADING_TYPE = ['heading_1', 'heading_2', 'heading_3']
-
+# if user want split by headings, use the corresponding splitter
+HEADING_SPLITTER = {
+    'heading_1': '# ',
+    'heading_2': '## ',
+    'heading_3': '### ',
+}
 
 class NotionExtractor(BaseExtractor):
 
@@ -73,8 +77,7 @@ class NotionExtractor(BaseExtractor):
             docs.extend(page_text_documents)
         elif notion_page_type == 'page':
             page_text_list = self._get_notion_block_data(notion_obj_id)
-            for page_text in page_text_list:
-                docs.append(Document(page_content=page_text))
+            docs.append(Document(page_content='\n'.join(page_text_list)))
         else:
             raise ValueError("notion page type not supported")
 
@@ -96,7 +99,7 @@ class NotionExtractor(BaseExtractor):
 
         data = res.json()
 
-        database_content_list = []
+        database_content = []
         if 'results' not in data or data["results"] is None:
             return []
         for result in data["results"]:
@@ -131,18 +134,16 @@ class NotionExtractor(BaseExtractor):
                     row_content = row_content + f'{key}:{value_content}\n'
                 else:
                     row_content = row_content + f'{key}:{value}\n'
-            document = Document(page_content=row_content)
-            database_content_list.append(document)
+            database_content.append(row_content)
 
-        return database_content_list
+        return [Document(page_content='\n'.join(database_content))]
 
     def _get_notion_block_data(self, page_id: str) -> list[str]:
         result_lines_arr = []
-        cur_block_id = page_id
+        start_cursor = None
+        block_url = BLOCK_CHILD_URL_TMPL.format(block_id=page_id)
         while True:
-            block_url = BLOCK_CHILD_URL_TMPL.format(block_id=cur_block_id)
-            query_dict: dict[str, Any] = {}
-
+            query_dict: dict[str, Any] = {} if not start_cursor else {'start_cursor': start_cursor}
             res = requests.request(
                 "GET",
                 block_url,
@@ -151,11 +152,9 @@ class NotionExtractor(BaseExtractor):
                     "Content-Type": "application/json",
                     "Notion-Version": "2022-06-28",
                 },
-                json=query_dict
+                params=query_dict
             )
             data = res.json()
-            # current block's heading
-            heading = ''
             for result in data["results"]:
                 result_type = result["type"]
                 result_obj = result[result_type]
@@ -172,8 +171,6 @@ class NotionExtractor(BaseExtractor):
                             if "text" in rich_text:
                                 text = rich_text["text"]["content"]
                                 cur_result_text_arr.append(text)
-                                if result_type in HEADING_TYPE:
-                                    heading = text
 
                     result_block_id = result["id"]
                     has_children = result["has_children"]
@@ -185,25 +182,24 @@ class NotionExtractor(BaseExtractor):
                         cur_result_text_arr.append(children_text)
 
                     cur_result_text = "\n".join(cur_result_text_arr)
-                    cur_result_text += "\n\n"
-                    if result_type in HEADING_TYPE:
-                        result_lines_arr.append(cur_result_text)
+                    if result_type in HEADING_SPLITTER:
+                        result_lines_arr.append(f"{HEADING_SPLITTER[result_type]}{cur_result_text}")
                     else:
-                        result_lines_arr.append(f'{heading}\n{cur_result_text}')
+                        result_lines_arr.append(cur_result_text + '\n\n')
 
             if data["next_cursor"] is None:
                 break
             else:
-                cur_block_id = data["next_cursor"]
+                start_cursor = data["next_cursor"]
         return result_lines_arr
 
     def _read_block(self, block_id: str, num_tabs: int = 0) -> str:
         """Read a block."""
         result_lines_arr = []
-        cur_block_id = block_id
+        start_cursor = None
+        block_url = BLOCK_CHILD_URL_TMPL.format(block_id=block_id)
         while True:
-            block_url = BLOCK_CHILD_URL_TMPL.format(block_id=cur_block_id)
-            query_dict: dict[str, Any] = {}
+            query_dict: dict[str, Any] = {} if not start_cursor else {'start_cursor': start_cursor}
 
             res = requests.request(
                 "GET",
@@ -213,12 +209,11 @@ class NotionExtractor(BaseExtractor):
                     "Content-Type": "application/json",
                     "Notion-Version": "2022-06-28",
                 },
-                json=query_dict
+                params=query_dict
             )
             data = res.json()
             if 'results' not in data or data["results"] is None:
                 break
-            heading = ''
             for result in data["results"]:
                 result_type = result["type"]
                 result_obj = result[result_type]
@@ -235,8 +230,6 @@ class NotionExtractor(BaseExtractor):
                                 text = rich_text["text"]["content"]
                                 prefix = "\t" * num_tabs
                                 cur_result_text_arr.append(prefix + text)
-                                if result_type in HEADING_TYPE:
-                                    heading = text
                     result_block_id = result["id"]
                     has_children = result["has_children"]
                     block_type = result["type"]
@@ -247,15 +240,15 @@ class NotionExtractor(BaseExtractor):
                         cur_result_text_arr.append(children_text)
 
                     cur_result_text = "\n".join(cur_result_text_arr)
-                    if result_type in HEADING_TYPE:
-                        result_lines_arr.append(cur_result_text)
+                    if result_type in HEADING_SPLITTER:
+                        result_lines_arr.append(f'{HEADING_SPLITTER[result_type]}{cur_result_text}')
                     else:
-                        result_lines_arr.append(f'{heading}\n{cur_result_text}')
+                        result_lines_arr.append(cur_result_text + '\n\n')
 
             if data["next_cursor"] is None:
                 break
             else:
-                cur_block_id = data["next_cursor"]
+                start_cursor = data["next_cursor"]
 
         result_lines = "\n".join(result_lines_arr)
         return result_lines
@@ -264,10 +257,10 @@ class NotionExtractor(BaseExtractor):
         """Read table rows."""
         done = False
         result_lines_arr = []
-        cur_block_id = block_id
+        start_cursor = None
+        block_url = BLOCK_CHILD_URL_TMPL.format(block_id=block_id)
         while not done:
-            block_url = BLOCK_CHILD_URL_TMPL.format(block_id=cur_block_id)
-            query_dict: dict[str, Any] = {}
+            query_dict: dict[str, Any] = {} if not start_cursor else {'start_cursor': start_cursor}
 
             res = requests.request(
                 "GET",
@@ -277,7 +270,7 @@ class NotionExtractor(BaseExtractor):
                     "Content-Type": "application/json",
                     "Notion-Version": "2022-06-28",
                 },
-                json=query_dict
+                params=query_dict
             )
             data = res.json()
             # get table headers text
@@ -306,7 +299,7 @@ class NotionExtractor(BaseExtractor):
                 done = True
                 break
             else:
-                cur_block_id = data["next_cursor"]
+                start_cursor = data["next_cursor"]
 
         result_lines = "\n".join(result_lines_arr)
         return result_lines
@@ -351,12 +344,12 @@ class NotionExtractor(BaseExtractor):
 
     @classmethod
     def _get_access_token(cls, tenant_id: str, notion_workspace_id: str) -> str:
-        data_source_binding = DataSourceBinding.query.filter(
+        data_source_binding = DataSourceOauthBinding.query.filter(
             db.and_(
-                DataSourceBinding.tenant_id == tenant_id,
-                DataSourceBinding.provider == 'notion',
-                DataSourceBinding.disabled == False,
-                DataSourceBinding.source_info['workspace_id'] == f'"{notion_workspace_id}"'
+                DataSourceOauthBinding.tenant_id == tenant_id,
+                DataSourceOauthBinding.provider == 'notion',
+                DataSourceOauthBinding.disabled == False,
+                DataSourceOauthBinding.source_info['workspace_id'] == f'"{notion_workspace_id}"'
             )
         ).first()
 

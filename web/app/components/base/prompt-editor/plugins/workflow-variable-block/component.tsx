@@ -9,7 +9,9 @@ import {
 } from 'lexical'
 import { mergeRegister } from '@lexical/utils'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
-import cn from 'classnames'
+import {
+  RiErrorWarningFill,
+} from '@remixicon/react'
 import { useSelectOrDelete } from '../../hooks'
 import type { WorkflowNodesMap } from './node'
 import { WorkflowVariableBlockNode } from './node'
@@ -17,11 +19,11 @@ import {
   DELETE_WORKFLOW_VARIABLE_BLOCK_COMMAND,
   UPDATE_WORKFLOW_NODES_MAP,
 } from './index'
+import cn from '@/utils/classnames'
 import { Variable02 } from '@/app/components/base/icons/src/vender/solid/development'
 import { VarBlockIcon } from '@/app/components/workflow/block-icon'
 import { Line3 } from '@/app/components/base/icons/src/public/common'
 import { isSystemVar } from '@/app/components/workflow/nodes/_base/components/variable/utils'
-import { AlertCircle } from '@/app/components/base/icons/src/vender/solid/alertsAndFeedback'
 import TooltipPlus from '@/app/components/base/tooltip-plus'
 
 type WorkflowVariableBlockComponentProps = {
@@ -39,7 +41,13 @@ const WorkflowVariableBlockComponent = ({
   const [editor] = useLexicalComposerContext()
   const [ref, isSelected] = useSelectOrDelete(nodeKey, DELETE_WORKFLOW_VARIABLE_BLOCK_COMMAND)
   const variablesLength = variables.length
-  const lastVariable = isSystemVar(variables) ? variables.join('.') : variables[variablesLength - 1]
+  const varName = (
+    () => {
+      const isSystem = isSystemVar(variables)
+      const varName = variablesLength >= 3 ? (variables).slice(-2).join('.') : variables[variablesLength - 1]
+      return `${isSystem ? 'sys.' : ''}${varName}`
+    }
+  )()
   const [localWorkflowNodesMap, setLocalWorkflowNodesMap] = useState<WorkflowNodesMap>(workflowNodesMap)
   const node = localWorkflowNodesMap![variables[0]]
 
@@ -86,10 +94,10 @@ const WorkflowVariableBlockComponent = ({
       </div>
       <div className='flex items-center text-primary-600'>
         <Variable02 className='w-3.5 h-3.5' />
-        <div className='shrink-0 ml-0.5 text-xs font-medium truncate' title={lastVariable}>{lastVariable}</div>
+        <div className='shrink-0 ml-0.5 text-xs font-medium truncate' title={varName}>{varName}</div>
         {
           !node && (
-            <AlertCircle className='ml-0.5 w-3 h-3 text-[#D92D20]' />
+            <RiErrorWarningFill className='ml-0.5 w-3 h-3 text-[#D92D20]' />
           )
         }
       </div>

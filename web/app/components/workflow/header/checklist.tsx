@@ -7,7 +7,10 @@ import {
   useEdges,
   useNodes,
 } from 'reactflow'
-import cn from 'classnames'
+import {
+  RiCloseLine,
+  RiListCheck3,
+} from '@remixicon/react'
 import BlockIcon from '../block-icon'
 import {
   useChecklist,
@@ -17,15 +20,14 @@ import type {
   CommonEdgeType,
   CommonNodeType,
 } from '../types'
+import cn from '@/utils/classnames'
 import {
   PortalToFollowElem,
   PortalToFollowElemContent,
   PortalToFollowElemTrigger,
 } from '@/app/components/base/portal-to-follow-elem'
 import {
-  Checklist,
   ChecklistSquare,
-  XClose,
 } from '@/app/components/base/icons/src/vender/line/general'
 import { AlertTriangle } from '@/app/components/base/icons/src/vender/line/alertsAndFeedback'
 
@@ -61,12 +63,12 @@ const WorkflowChecklist = ({
         >
           <div
             className={`
-              group flex items-center justify-center w-full h-full rounded-md cursor-pointer 
+              group flex items-center justify-center w-full h-full rounded-md cursor-pointer
               hover:bg-primary-50
               ${open && 'bg-primary-50'}
             `}
           >
-            <Checklist
+            <RiListCheck3
               className={`
                 w-4 h-4 group-hover:text-primary-600
                 ${open ? 'text-primary-600' : 'text-gray-500'}`
@@ -95,7 +97,7 @@ const WorkflowChecklist = ({
               className='shrink-0 flex items-center justify-center w-6 h-6 cursor-pointer'
               onClick={() => setOpen(false)}
             >
-              <XClose className='w-4 h-4 text-gray-500' />
+              <RiCloseLine className='w-4 h-4 text-gray-500' />
             </div>
           </div>
           <div className='py-2'>
@@ -120,9 +122,11 @@ const WorkflowChecklist = ({
                               className='mr-1.5'
                               toolIcon={node.toolIcon}
                             />
-                            {node.title}
+                            <span className='grow truncate'>
+                              {node.title}
+                            </span>
                           </div>
-                          <div className='border-t-[0.5px] border-t-black/[0.02]'>
+                          <div className='border-t-[0.5px] border-t-black/2'>
                             {
                               node.unConnected && (
                                 <div className='px-3 py-2 bg-gray-25 rounded-b-lg'>

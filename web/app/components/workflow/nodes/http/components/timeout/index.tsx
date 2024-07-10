@@ -1,10 +1,10 @@
 'use client'
 import type { FC } from 'react'
 import React from 'react'
-import cn from 'classnames'
 import { useTranslation } from 'react-i18next'
 import { useBoolean } from 'ahooks'
 import type { Timeout as TimeoutPayloadType } from '../../types'
+import cn from '@/utils/classnames'
 import { ChevronRight } from '@/app/components/base/icons/src/vender/line/arrows'
 
 type Props = {
@@ -68,7 +68,7 @@ const Timeout: FC<Props> = ({ readonly, payload, onChange }) => {
                 value={connect}
                 onChange={v => onChange?.({ ...payload, connect: v })}
                 min={1}
-                max={max_connect_timeout ?? 300}
+                max={max_connect_timeout || 300}
               />
               <InputField
                 title={t('workflow.nodes.http.timeout.readLabel')!}
@@ -78,7 +78,7 @@ const Timeout: FC<Props> = ({ readonly, payload, onChange }) => {
                 value={read}
                 onChange={v => onChange?.({ ...payload, read: v })}
                 min={1}
-                max={max_read_timeout ?? 600}
+                max={max_read_timeout || 600}
               />
               <InputField
                 title={t('workflow.nodes.http.timeout.writeLabel')!}
@@ -88,7 +88,7 @@ const Timeout: FC<Props> = ({ readonly, payload, onChange }) => {
                 value={write}
                 onChange={v => onChange?.({ ...payload, write: v })}
                 min={1}
-                max={max_write_timeout ?? 600}
+                max={max_write_timeout || 600}
               />
             </div>
           </div>
